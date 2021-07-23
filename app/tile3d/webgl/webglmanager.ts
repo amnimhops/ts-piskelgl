@@ -6,6 +6,11 @@ type TextureMap = Record<string,WebGLTexture>;
 interface Material{
 
 }
+class Program{
+    glProgram:WebGLProgram;
+    attributes;
+    uniforms;
+}
 class TextureMaterial implements Material{
 
 }
@@ -13,11 +18,42 @@ class ColorMaterial implements Material{
 
 }
 class Geometry{
-    vertices:number[][];
-    faces:number[];
+    static VERTEX_BYTE_SIZE = 5 * Float32Array.BYTES_PER_ELEMENT;
 
-    constructor(){
+    faceCount:number;
+    vertexCount:number;
+    vertexBuffer:WebGLBuffer;
+    indexBuffer:WebGLBuffer;
+    /**
+     * 
+     * @param vertexData Vertex data in packets of 5 floats: x y z u v
+     * @param faces 
+     */
+    constructor(private vertexData:number[],private faces:number[]){
+        this.vertexCount = this.vertexData.length / 5; // 5 floats per vertex
+        this.faceCount = this.faces.length / 3; //  3 ints per face
+    }
 
+    build(gl:WebGLRenderingContext){
+        if(this.vertexBuffer != null){
+            throw new Error("Geometry already built");
+        }
+ 
+        this.vertexBuffer = gl.createBuffer();
+        this.indexBuffer = gl.createBuffer();
+
+        gl.bindBuffer(gl.ARRAY_BUFFER,this.vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertexData),gl.STATIC_DRAW);
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.indexBuffer);
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(this.faces),gl.STATIC_DRAW);
+    }
+
+    draw(gl:WebGLRenderingContext){
+        gl.bindBuffer(gl.ARRAY_BUFFER,this.vertexBuffer);
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.indexBuffer);
+        gl.drawElements(gl.TRIANGLES,3 * this.faceCount ,gl.UNSIGNED_SHORT,0);
+        console.log(this.vertexData);
     }
 }
 
@@ -87,33 +123,12 @@ export class WebGLManager{
         const projectionMatrix:mat4 = mat4.create();
         mat4.perspective(projectionMatrix, 45 * Math.PI / 180,this.gl.canvas.width/this.gl.canvas.height,0.1,100);
         
-        // Buffer population with vertices
-        const buffer:WebGLBuffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER,buffer);
-
-        const points:number[] =[
-            0,1,0, 0,1,
-            1,1,0, 1,1,
-            0,0,0, 0,0,
-            1,0,0, 1,0
-          ];
+       
 
         const modelViewMatrix:mat4 = mat4.create();
         mat4.translate(modelViewMatrix,modelViewMatrix,[0.0, 0.0, -6.0]); // See later why this is negative
 
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(points),this.gl.STATIC_DRAW);
-
-        // Texture coordinates buffer
-        /*const txCoords:number[] = [
-            0,1,
-            1,1,
-            0,0,
-            1,0
-        ];*/
-        //const txCoordBuffer = this.gl.createBuffer();
-        //this.gl.bindBuffer(this.gl.ARRAY_BUFFER,txCoordBuffer);
-        //this.gl.bufferData(this.gl.ARRAY_BUFFER,new Float32Array(txCoords),this.gl.STATIC_DRAW);
-        // Compile shaders
+        
         const vsSource = `
             attribute vec4 aVertexPosition;
             
@@ -154,7 +169,6 @@ export class WebGLManager{
         const floatSize = Float32Array.BYTES_PER_ELEMENT;
         const itemSize = floatSize * numDimensions;
 
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER,buffer);
         this.gl.vertexAttribPointer(vertexPositionAttribute,3,this.gl.FLOAT,false,itemSize,0);  // first 3 floats
         this.gl.vertexAttribPointer(aTextureCoordAttribute,2,this.gl.FLOAT,false,itemSize,3 * floatSize);   // skip 3 floats, next 2 floats
         this.gl.enableVertexAttribArray(vertexPositionAttribute);
@@ -175,10 +189,22 @@ export class WebGLManager{
         this.gl.uniformMatrix4fv(uModelViewMatrixAttribute,false,modelViewMatrix);
         
         // Draw
-        this.gl.drawArrays(this.gl.TRIANGLE_STRIP,0,4);
+        //this.gl.drawArrays(this.gl.TRIANGLE_STRIP,0,4);
+        //this.gl.drawElements(this.gl.TRIANGLES,6 ,this.gl.UNSIGNED_SHORT,0);
 
        
+        const geom = new Geometry([
+            0,0,0, 0,1,
+            0, 1,-1, 1,1,
+            2,0,0, 0,0
+          ],[
+            0,1,2
+        ]);
 
+        geom.build(this.gl);
+       // geom.draw(this.gl);
+       
+       
 
 
         

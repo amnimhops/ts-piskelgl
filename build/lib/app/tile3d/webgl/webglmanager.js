@@ -1,6 +1,11 @@
 define(["require", "exports", "gl-matrix"], function (require, exports, gl_matrix_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    var Program = /** @class */ (function () {
+        function Program() {
+        }
+        return Program;
+    }());
     var TextureMaterial = /** @class */ (function () {
         function TextureMaterial() {
         }
@@ -12,8 +17,35 @@ define(["require", "exports", "gl-matrix"], function (require, exports, gl_matri
         return ColorMaterial;
     }());
     var Geometry = /** @class */ (function () {
-        function Geometry() {
+        /**
+         *
+         * @param vertexData Vertex data in packets of 5 floats: x y z u v
+         * @param faces
+         */
+        function Geometry(vertexData, faces) {
+            this.vertexData = vertexData;
+            this.faces = faces;
+            this.vertexCount = this.vertexData.length / 5; // 5 floats per vertex
+            this.faceCount = this.faces.length / 3; //  3 ints per face
         }
+        Geometry.prototype.build = function (gl) {
+            if (this.vertexBuffer != null) {
+                throw new Error("Geometry already built");
+            }
+            this.vertexBuffer = gl.createBuffer();
+            this.indexBuffer = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertexData), gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.faces), gl.STATIC_DRAW);
+        };
+        Geometry.prototype.draw = function (gl) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+            gl.drawElements(gl.TRIANGLES, 3 * this.faceCount, gl.UNSIGNED_SHORT, 0);
+            console.log(this.vertexData);
+        };
+        Geometry.VERTEX_BYTE_SIZE = 5 * Float32Array.BYTES_PER_ELEMENT;
         return Geometry;
     }());
     function loadShader(gl, type, source) {
@@ -67,29 +99,8 @@ define(["require", "exports", "gl-matrix"], function (require, exports, gl_matri
             // Camera setup
             var projectionMatrix = gl_matrix_1.mat4.create();
             gl_matrix_1.mat4.perspective(projectionMatrix, 45 * Math.PI / 180, this.gl.canvas.width / this.gl.canvas.height, 0.1, 100);
-            // Buffer population with vertices
-            var buffer = this.gl.createBuffer();
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-            var points = [
-                0, 1, 0, 0, 1,
-                1, 1, 0, 1, 1,
-                0, 0, 0, 0, 0,
-                1, 0, 0, 1, 0
-            ];
             var modelViewMatrix = gl_matrix_1.mat4.create();
             gl_matrix_1.mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -6.0]); // See later why this is negative
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(points), this.gl.STATIC_DRAW);
-            // Texture coordinates buffer
-            /*const txCoords:number[] = [
-                0,1,
-                1,1,
-                0,0,
-                1,0
-            ];*/
-            //const txCoordBuffer = this.gl.createBuffer();
-            //this.gl.bindBuffer(this.gl.ARRAY_BUFFER,txCoordBuffer);
-            //this.gl.bufferData(this.gl.ARRAY_BUFFER,new Float32Array(txCoords),this.gl.STATIC_DRAW);
-            // Compile shaders
             var vsSource = "\n            attribute vec4 aVertexPosition;\n            \n            uniform mat4 uModelViewMatrix;\n            uniform mat4 uProjectionMatrix;\n\n            attribute vec2 aTextureCoord;\n            varying highp vec2 vTextureCoord;\n\n            void main() {\n                gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;\n                vTextureCoord = aTextureCoord;\n            }\n        ";
             var fsSource = "\n            varying highp vec2 vTextureCoord;\n            uniform sampler2D uSampler;\n\n            void main() {\n                gl_FragColor = texture2D(uSampler, vTextureCoord);\n            }\n        ";
             var program = initShaders(this.gl, vsSource, fsSource);
@@ -104,7 +115,6 @@ define(["require", "exports", "gl-matrix"], function (require, exports, gl_matri
             var numDimensions = 3 + 2; // x y z u v
             var floatSize = Float32Array.BYTES_PER_ELEMENT;
             var itemSize = floatSize * numDimensions;
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
             this.gl.vertexAttribPointer(vertexPositionAttribute, 3, this.gl.FLOAT, false, itemSize, 0); // first 3 floats
             this.gl.vertexAttribPointer(aTextureCoordAttribute, 2, this.gl.FLOAT, false, itemSize, 3 * floatSize); // skip 3 floats, next 2 floats
             this.gl.enableVertexAttribArray(vertexPositionAttribute);
@@ -121,7 +131,17 @@ define(["require", "exports", "gl-matrix"], function (require, exports, gl_matri
             this.gl.uniformMatrix4fv(uProjectionMatrixAttribute, false, projectionMatrix);
             this.gl.uniformMatrix4fv(uModelViewMatrixAttribute, false, modelViewMatrix);
             // Draw
-            this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+            //this.gl.drawArrays(this.gl.TRIANGLE_STRIP,0,4);
+            //this.gl.drawElements(this.gl.TRIANGLES,6 ,this.gl.UNSIGNED_SHORT,0);
+            var geom = new Geometry([
+                0, 0, 0, 0, 1,
+                0, 1, -1, 1, 1,
+                2, 0, 0, 0, 0
+            ], [
+                0, 1, 2
+            ]);
+            geom.build(this.gl);
+            // geom.draw(this.gl);
         };
         return WebGLManager;
     }());
