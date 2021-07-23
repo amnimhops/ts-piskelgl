@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "target":"ES5",
+        "outDir": "../build/lib/app",
+        "module": "AMD",
+        "sourceMap": true,
+        "baseUrl": ".",
+        "allowJs":true,
+        "lib":["es2016","DOM"],
+        "types":["gl-matrix"]
+    }
+}
