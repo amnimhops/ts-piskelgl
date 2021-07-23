@@ -71,24 +71,24 @@ define(["require", "exports", "gl-matrix"], function (require, exports, gl_matri
             var buffer = this.gl.createBuffer();
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
             var points = [
-                0, 1,
-                1, 1,
-                0, 0,
-                1, 0
+                0, 1, 0, 0, 1,
+                1, 1, 0, 1, 1,
+                0, 0, 0, 0, 0,
+                1, 0, 0, 1, 0
             ];
             var modelViewMatrix = gl_matrix_1.mat4.create();
-            gl_matrix_1.mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -2.0]); // See later why this is negative
+            gl_matrix_1.mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -6.0]); // See later why this is negative
             this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(points), this.gl.STATIC_DRAW);
             // Texture coordinates buffer
-            var txCoords = [
-                0, 1,
-                1, 1,
-                0, 0,
-                1, 0
-            ];
-            var txCoordBuffer = this.gl.createBuffer();
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, txCoordBuffer);
-            this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(txCoords), this.gl.STATIC_DRAW);
+            /*const txCoords:number[] = [
+                0,1,
+                1,1,
+                0,0,
+                1,0
+            ];*/
+            //const txCoordBuffer = this.gl.createBuffer();
+            //this.gl.bindBuffer(this.gl.ARRAY_BUFFER,txCoordBuffer);
+            //this.gl.bufferData(this.gl.ARRAY_BUFFER,new Float32Array(txCoords),this.gl.STATIC_DRAW);
             // Compile shaders
             var vsSource = "\n            attribute vec4 aVertexPosition;\n            \n            uniform mat4 uModelViewMatrix;\n            uniform mat4 uProjectionMatrix;\n\n            attribute vec2 aTextureCoord;\n            varying highp vec2 vTextureCoord;\n\n            void main() {\n                gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;\n                vTextureCoord = aTextureCoord;\n            }\n        ";
             var fsSource = "\n            varying highp vec2 vTextureCoord;\n            uniform sampler2D uSampler;\n\n            void main() {\n                gl_FragColor = texture2D(uSampler, vTextureCoord);\n            }\n        ";
@@ -100,13 +100,19 @@ define(["require", "exports", "gl-matrix"], function (require, exports, gl_matri
             var uSampler = this.gl.getUniformLocation(program, "uSampler");
             var uModelViewMatrixAttribute = this.gl.getUniformLocation(program, "uModelViewMatrix");
             // 1.- Vertex buffer
+            // Multidimensional buffer https://stackoverflow.com/questions/16887278/webgl-vertex-buffer-with-more-than-4-dimensional-coordinates
+            var numDimensions = 3 + 2; // x y z u v
+            var floatSize = Float32Array.BYTES_PER_ELEMENT;
+            var itemSize = floatSize * numDimensions;
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
-            this.gl.vertexAttribPointer(vertexPositionAttribute, 2, this.gl.FLOAT, false, 0, 0); // TODO review later, this is tied to the buffer topology
+            this.gl.vertexAttribPointer(vertexPositionAttribute, 3, this.gl.FLOAT, false, itemSize, 0); // first 3 floats
+            this.gl.vertexAttribPointer(aTextureCoordAttribute, 2, this.gl.FLOAT, false, itemSize, 3 * floatSize); // skip 3 floats, next 2 floats
             this.gl.enableVertexAttribArray(vertexPositionAttribute);
-            // 2.- TextCoord buffer
-            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, txCoordBuffer);
-            this.gl.vertexAttribPointer(aTextureCoordAttribute, 2, this.gl.FLOAT, false, 0, 0);
             this.gl.enableVertexAttribArray(aTextureCoordAttribute);
+            // 2.- TextCoord buffer
+            /*this.gl.bindBuffer(this.gl.ARRAY_BUFFER,txCoordBuffer);
+            this.gl.vertexAttribPointer(aTextureCoordAttribute,2,this.gl.FLOAT,false,0,0);
+           */
             // 3.- Activate texture
             this.gl.activeTexture(this.gl.TEXTURE0);
             this.gl.bindTexture(this.gl.TEXTURE_2D, this.textures['prueba']);

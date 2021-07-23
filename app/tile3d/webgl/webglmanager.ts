@@ -15,7 +15,7 @@ class ColorMaterial implements Material{
 class Geometry{
     vertices:number[][];
     faces:number[];
-    
+
     constructor(){
 
     }
@@ -92,27 +92,27 @@ export class WebGLManager{
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER,buffer);
 
         const points:number[] =[
-            0,1,
-            1,1,
-            0,0,
-            1,0
+            0,1,0, 0,1,
+            1,1,0, 1,1,
+            0,0,0, 0,0,
+            1,0,0, 1,0
           ];
 
         const modelViewMatrix:mat4 = mat4.create();
-        mat4.translate(modelViewMatrix,modelViewMatrix,[0.0, 0.0, -2.0]); // See later why this is negative
+        mat4.translate(modelViewMatrix,modelViewMatrix,[0.0, 0.0, -6.0]); // See later why this is negative
 
         this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(points),this.gl.STATIC_DRAW);
 
         // Texture coordinates buffer
-        const txCoords:number[] = [
+        /*const txCoords:number[] = [
             0,1,
             1,1,
             0,0,
             1,0
-        ];
-        const txCoordBuffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER,txCoordBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER,new Float32Array(txCoords),this.gl.STATIC_DRAW);
+        ];*/
+        //const txCoordBuffer = this.gl.createBuffer();
+        //this.gl.bindBuffer(this.gl.ARRAY_BUFFER,txCoordBuffer);
+        //this.gl.bufferData(this.gl.ARRAY_BUFFER,new Float32Array(txCoords),this.gl.STATIC_DRAW);
         // Compile shaders
         const vsSource = `
             attribute vec4 aVertexPosition;
@@ -149,14 +149,21 @@ export class WebGLManager{
         const uModelViewMatrixAttribute = this.gl.getUniformLocation(program,"uModelViewMatrix");
         
         // 1.- Vertex buffer
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER,buffer);
-        this.gl.vertexAttribPointer(vertexPositionAttribute,2,this.gl.FLOAT,false,0,0);// TODO review later, this is tied to the buffer topology
-        this.gl.enableVertexAttribArray(vertexPositionAttribute);
+        // Multidimensional buffer https://stackoverflow.com/questions/16887278/webgl-vertex-buffer-with-more-than-4-dimensional-coordinates
+        const numDimensions = 3+2; // x y z u v
+        const floatSize = Float32Array.BYTES_PER_ELEMENT;
+        const itemSize = floatSize * numDimensions;
 
-        // 2.- TextCoord buffer
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER,txCoordBuffer);
-        this.gl.vertexAttribPointer(aTextureCoordAttribute,2,this.gl.FLOAT,false,0,0);
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER,buffer);
+        this.gl.vertexAttribPointer(vertexPositionAttribute,3,this.gl.FLOAT,false,itemSize,0);  // first 3 floats
+        this.gl.vertexAttribPointer(aTextureCoordAttribute,2,this.gl.FLOAT,false,itemSize,3 * floatSize);   // skip 3 floats, next 2 floats
+        this.gl.enableVertexAttribArray(vertexPositionAttribute);
         this.gl.enableVertexAttribArray(aTextureCoordAttribute);
+        
+        // 2.- TextCoord buffer
+        /*this.gl.bindBuffer(this.gl.ARRAY_BUFFER,txCoordBuffer);
+        this.gl.vertexAttribPointer(aTextureCoordAttribute,2,this.gl.FLOAT,false,0,0);
+       */
 
         // 3.- Activate texture
         this.gl.activeTexture(this.gl.TEXTURE0);
