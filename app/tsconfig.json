@@ -4,6 +4,7 @@
         "outDir": "../build/lib/app",
         "module": "AMD",
         "sourceMap": true,
+        "sourceRoot": "/app",
         "baseUrl": ".",
         "allowJs":true,
         "lib":["es2016","DOM"],

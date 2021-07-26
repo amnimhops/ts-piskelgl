@@ -1,96 +1,58 @@
-import { TileMap } from "tile3d/map";
-import {mat4, vec3} from 'gl-matrix';
 
-type TextureMap = Record<string,WebGLTexture>;
+import {mat4, vec3, vec4} from 'gl-matrix';
+import { ColorMaterial, Material, MaterialParams, Texture, TextureMaterial } from "./material";
+import { Geometry } from "./geometry";
+import { Scene } from './scene';
+import { Entity } from './entity';
+import { Camera } from './camera';
 
-interface Material{
-
-}
-class Program{
-    glProgram:WebGLProgram;
-    attributes;
-    uniforms;
-}
-class TextureMaterial implements Material{
-
-}
-class ColorMaterial implements Material{
-
-}
-class Geometry{
-    static VERTEX_BYTE_SIZE = 5 * Float32Array.BYTES_PER_ELEMENT;
-
-    faceCount:number;
-    vertexCount:number;
-    vertexBuffer:WebGLBuffer;
-    indexBuffer:WebGLBuffer;
-    /**
-     * 
-     * @param vertexData Vertex data in packets of 5 floats: x y z u v
-     * @param faces 
-     */
-    constructor(private vertexData:number[],private faces:number[]){
-        this.vertexCount = this.vertexData.length / 5; // 5 floats per vertex
-        this.faceCount = this.faces.length / 3; //  3 ints per face
-    }
-
-    build(gl:WebGLRenderingContext){
-        if(this.vertexBuffer != null){
-            throw new Error("Geometry already built");
-        }
- 
-        this.vertexBuffer = gl.createBuffer();
-        this.indexBuffer = gl.createBuffer();
-
-        gl.bindBuffer(gl.ARRAY_BUFFER,this.vertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertexData),gl.STATIC_DRAW);
-
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.indexBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(this.faces),gl.STATIC_DRAW);
-    }
-
-    draw(gl:WebGLRenderingContext){
-        gl.bindBuffer(gl.ARRAY_BUFFER,this.vertexBuffer);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.indexBuffer);
-        gl.drawElements(gl.TRIANGLES,3 * this.faceCount ,gl.UNSIGNED_SHORT,0);
-        console.log(this.vertexData);
-    }
-}
-
-function loadShader(gl:WebGLRenderingContext,type:number,source:string):WebGLShader{
-    const shader:WebGLShader = gl.createShader(type);
-    gl.shaderSource(shader,source);
-    gl.compileShader(shader);
-    if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS)){
-        gl.deleteShader(shader);
-        throw new Error('Error compiling shader:'+gl.getShaderInfoLog(shader));
-    }
-
-    return shader;
-}
-
-function initShaders(gl:WebGLRenderingContext,vsSource:string,fsSource:string):WebGLProgram{
-    const vs = loadShader(gl,gl.VERTEX_SHADER,vsSource);
-    const fs = loadShader(gl,gl.FRAGMENT_SHADER,fsSource);
-
-    const program = gl.createProgram();
-    gl.attachShader(program,vs);
-    gl.attachShader(program,fs);
-    gl.linkProgram(program);
-
-    if(!gl.getProgramParameter(program,gl.LINK_STATUS)){
-        throw new Error('Error initializing shaders:'+gl.getProgramInfoLog(program));
-    }
-
-    return program;
-}
+type TextureMap = Record<string,Texture>;
 
 export class WebGLManager{
     gl:WebGLRenderingContext;
     textures:TextureMap = {};
+    scene:Scene;
+    materials:Record<string,Material> = {};
+    geometries:Record<string,Geometry> = {};
+    renderQueue:Record<string,Geometry[]> = {};
+    camera:Camera;
+    addMaterial(name:string,material:Material){
+        if(this.materials[name] !== undefined){
+            throw new Error(`Material ${name} already added`);
+        }
 
+        this.materials[name] = material;
+        this.renderQueue[name] = [];
+    }
+
+    addGeometry(name:string,geometry:Geometry,pname:string){
+        if(this.geometries[name] !== undefined){
+            throw new Error(`Geometry ${name} already added`);
+        }
+        if(this.materials[pname] == undefined){
+            throw new Error(`Program ${pname} not defined`);
+        }
+
+        this.geometries[name] = geometry;
+        this.renderQueue[pname].push(geometry);
+        
+        geometry.build(this.gl);
+    }
+
+    setCamera(camera:Camera){
+        this.camera = camera;
+    }
+    
     constructor(context:WebGLRenderingContext){
         this.gl = context;
+     }
+
+     getTexture(name:string):Texture{
+         if(this.textures[name] == undefined){
+             throw new Error(`Texture ${name} not found`);
+         }
+
+         return this.textures[name];
      }
 
     createTexture(name:string,image:HTMLImageElement){
@@ -98,20 +60,32 @@ export class WebGLManager{
             throw new Error(`texture ${name} already defined`);
         }
 
-        const texture = this.gl.createTexture();
-        this.gl.bindTexture(this.gl.TEXTURE_2D,texture);
+        const glTexture = this.gl.createTexture();
+        this.gl.bindTexture(this.gl.TEXTURE_2D,glTexture);
         this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL,true);
         this.gl.texImage2D(this.gl.TEXTURE_2D,0,this.gl.RGBA,this.gl.RGBA,this.gl.UNSIGNED_BYTE,image);
+        
+        this.gl.texParameteri(this.gl.TEXTURE_2D,this.gl.TEXTURE_WRAP_S,this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D,this.gl.TEXTURE_WRAP_T,this.gl.CLAMP_TO_EDGE);
         // TODO: Need to check if webgl does support mipmapping with npot textures
         // https://stackoverflow.com/questions/3792027/webgl-and-the-power-of-two-image-size
         // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Using_textures_in_WebGL
-        this.gl.generateMipmap(this.gl.TEXTURE_2D);
+        //this.gl.generateMipmap(this.gl.TEXTURE_2D);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
 
-        this.textures[name] = texture;
+        this.textures[name] = new Texture(glTexture,[image.width,image.height]);
         
     }
 
+    setScene(scene:Scene){
+        this.scene = scene;
+    }
+
     render(){
+        // Compute camera matrix only once
+        const projectionViewMatrix:mat4 = this.camera.getViewProjectionMatrix();
+
         // Context initialization
         this.gl.clearColor(0,0,0,1);
         this.gl.clearDepth(1)
@@ -119,94 +93,23 @@ export class WebGLManager{
         this.gl.depthFunc(this.gl.LEQUAL);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT|this.gl.DEPTH_BUFFER_BIT);
         
-        // Camera setup
-        const projectionMatrix:mat4 = mat4.create();
-        mat4.perspective(projectionMatrix, 45 * Math.PI / 180,this.gl.canvas.width/this.gl.canvas.height,0.1,100);
-        
-       
+        for(const matName in this.renderQueue){
+            const material = this.materials[matName];
+            const geomQueue = this.renderQueue[matName];
 
-        const modelViewMatrix:mat4 = mat4.create();
-        mat4.translate(modelViewMatrix,modelViewMatrix,[0.0, 0.0, -6.0]); // See later why this is negative
-
-        
-        const vsSource = `
-            attribute vec4 aVertexPosition;
+            for(const geometry of geomQueue){
+                this.gl.bindBuffer(this.gl.ARRAY_BUFFER,geometry.vertexBuffer);
+                this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER,geometry.indexBuffer);
             
-            uniform mat4 uModelViewMatrix;
-            uniform mat4 uProjectionMatrix;
+                
+                material.use({
+                    gl:this.gl,
+                    modelViewMatrix:geometry.matrix,
+                    projectionMatrix:projectionViewMatrix
+                });
 
-            attribute vec2 aTextureCoord;
-            varying highp vec2 vTextureCoord;
-
-            void main() {
-                gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-                vTextureCoord = aTextureCoord;
+                this.gl.drawElements(this.gl.TRIANGLES,3 * geometry.faceCount ,this.gl.UNSIGNED_SHORT,0);
             }
-        `;
-
-        const fsSource = `
-            varying highp vec2 vTextureCoord;
-            uniform sampler2D uSampler;
-
-            void main() {
-                gl_FragColor = texture2D(uSampler, vTextureCoord);
-            }
-        `;
-
-        const program:WebGLProgram = initShaders(this.gl,vsSource,fsSource);
-        
-        this.gl.useProgram(program);
-
-        const vertexPositionAttribute = this.gl.getAttribLocation(program,"aVertexPosition");
-        const aTextureCoordAttribute = this.gl.getAttribLocation(program,"aTextureCoord");
-        const uProjectionMatrixAttribute = this.gl.getUniformLocation(program,"uProjectionMatrix");
-        const uSampler = this.gl.getUniformLocation(program,"uSampler");
-        const uModelViewMatrixAttribute = this.gl.getUniformLocation(program,"uModelViewMatrix");
-        
-        // 1.- Vertex buffer
-        // Multidimensional buffer https://stackoverflow.com/questions/16887278/webgl-vertex-buffer-with-more-than-4-dimensional-coordinates
-        const numDimensions = 3+2; // x y z u v
-        const floatSize = Float32Array.BYTES_PER_ELEMENT;
-        const itemSize = floatSize * numDimensions;
-
-        this.gl.vertexAttribPointer(vertexPositionAttribute,3,this.gl.FLOAT,false,itemSize,0);  // first 3 floats
-        this.gl.vertexAttribPointer(aTextureCoordAttribute,2,this.gl.FLOAT,false,itemSize,3 * floatSize);   // skip 3 floats, next 2 floats
-        this.gl.enableVertexAttribArray(vertexPositionAttribute);
-        this.gl.enableVertexAttribArray(aTextureCoordAttribute);
-        
-        // 2.- TextCoord buffer
-        /*this.gl.bindBuffer(this.gl.ARRAY_BUFFER,txCoordBuffer);
-        this.gl.vertexAttribPointer(aTextureCoordAttribute,2,this.gl.FLOAT,false,0,0);
-       */
-
-        // 3.- Activate texture
-        this.gl.activeTexture(this.gl.TEXTURE0);
-        this.gl.bindTexture(this.gl.TEXTURE_2D,this.textures['prueba']);
-        
-        // Uniforms
-        this.gl.uniform1i(uSampler,0); // 0 is the texture ID
-        this.gl.uniformMatrix4fv(uProjectionMatrixAttribute,false,projectionMatrix);
-        this.gl.uniformMatrix4fv(uModelViewMatrixAttribute,false,modelViewMatrix);
-        
-        // Draw
-        //this.gl.drawArrays(this.gl.TRIANGLE_STRIP,0,4);
-        //this.gl.drawElements(this.gl.TRIANGLES,6 ,this.gl.UNSIGNED_SHORT,0);
-
-       
-        const geom = new Geometry([
-            0,0,0, 0,1,
-            0, 1,-1, 1,1,
-            2,0,0, 0,0
-          ],[
-            0,1,2
-        ]);
-
-        geom.build(this.gl);
-       // geom.draw(this.gl);
-       
-       
-
-
-        
+        }
     }
 }
