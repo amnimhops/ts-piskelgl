@@ -1,9 +1,15 @@
-import { mat4, vec3 } from "gl-matrix";
+import { mat4, vec2, vec3, vec4 } from "gl-matrix";
 import { Entity } from "./entity";
 
-class Geometry extends Entity{
+class Vertex{
+    data:number[];
 
-    //matrix:mat4; 
+    constructor(pos:vec3,normal:vec3=[0,0,0],uv:vec2 = [0,0], color:vec4 = [0,0,0,0]){
+        this.data = [...pos as number[], ...normal as number[], ...uv as number[], ...color as number[]];
+    }
+}
+
+class Geometry extends Entity{
     faceCount:number;
     vertexCount:number;
     vertexBuffer:WebGLBuffer;
@@ -17,7 +23,7 @@ class Geometry extends Entity{
         super();
         this.vertexCount = this.vertexData.length / 6; // 5 floats per vertex
         this.faceCount = this.faces.length / 3; //  3 ints per face
-        //this.matrix = mat4.create();
+
     }
 
     /*translate(position:vec3){
@@ -52,6 +58,8 @@ function quad(pos:vec3,size:number, textureIndex:number = 0):Geometry{
         2, 3, 0
     ]);
 }
+
+//function quad(pos:vec3,width:number,height:number)
 
 export {
     Geometry,

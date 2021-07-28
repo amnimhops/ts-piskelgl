@@ -46,7 +46,7 @@ image.onload = function(event) {
             const size = 1
             const frameIndex = c%9; // number of frames in this atlas
            // const matKey = materials[Math.floor(Math.random() * materials.length)].name;
-            t3d.glManager.addGeometry("q"+c,quad(position,size,frameIndex),"atex");
+            t3d.glManager.addGeometry("q"+c,quad(position,size,frameIndex),"tex");
         }
 
         let last = null;
@@ -84,3 +84,17 @@ for(let x=0;x<16;x++){
     console.log(x,model.compute(x))
 }
 
+// Testing piskel
+import * as piskel from 'tile3d/piskel/piskel';
+
+
+fetch("/build/assets/running.piskel")
+    .then( (response:Response) => {
+        return response.json();
+    })
+    .then( (data:any) => {
+        console.log(piskel.PiskelLoader.load(data));
+    })
+    .catch( (err:any) =>{
+        console.error(err);
+    });
