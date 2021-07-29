@@ -69,17 +69,7 @@ define(["require", "exports", "./material"], function (require, exports, materia
             for (var matName in this.renderQueue) {
                 var material = this.materials[matName];
                 var geomQueue = this.renderQueue[matName];
-                for (var _i = 0, geomQueue_1 = geomQueue; _i < geomQueue_1.length; _i++) {
-                    var geometry = geomQueue_1[_i];
-                    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, geometry.vertexBuffer);
-                    this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, geometry.indexBuffer);
-                    material.use({
-                        gl: this.gl,
-                        modelViewMatrix: geometry.matrix,
-                        projectionMatrix: projectionViewMatrix
-                    });
-                    this.gl.drawElements(this.gl.TRIANGLES, 3 * geometry.faceCount, this.gl.UNSIGNED_SHORT, 0);
-                }
+                material.render(this.gl, projectionViewMatrix, geomQueue);
             }
         };
         return WebGLManager;

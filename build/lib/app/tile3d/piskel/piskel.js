@@ -1,17 +1,4 @@
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-define(["require", "exports", "tile3d/webgl/geometry"], function (require, exports, geometry_1) {
+define(["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var PiskelLoader = /** @class */ (function () {
@@ -53,13 +40,11 @@ define(["require", "exports", "tile3d/webgl/geometry"], function (require, expor
         return PiskelLoader;
     }());
     exports.PiskelLoader = PiskelLoader;
-    var PiskelSurface = /** @class */ (function (_super) {
-        __extends(PiskelSurface, _super);
+    var PiskelSurface = /** @class */ (function () {
         function PiskelSurface() {
-            return _super !== null && _super.apply(this, arguments) || this;
         }
         return PiskelSurface;
-    }(geometry_1.Geometry));
+    }());
     var PiskelMaterial = /** @class */ (function () {
         function PiskelMaterial() {
         }

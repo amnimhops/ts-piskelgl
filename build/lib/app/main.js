@@ -25,19 +25,24 @@ define(["require", "exports", "tile3d/tile3d", "tile3d/webgl/camera", "tile3d/we
         ];
         materials.forEach(function (color) { return t3d.glManager.addMaterial(color.name, color.mat); });
         var camera = new camera_1.Camera(45, canvas.clientWidth, canvas.clientHeight, 0.1, 100);
-        camera.translate([5, 5, 15]);
+        camera.translate([2, 2, 15]);
+        //camera.rotate(45,[0,1,0]);
         //camera.rotate(15,[0,1,1]);
         t3d.glManager.setCamera(camera);
         /*t3d.glManager.addGeometry("q1",quad([-1,0,0],1.5,1),"atex");
         t3d.glManager.addGeometry("q2",quad([1,0,0],1.5,4),"atex");*/
-        for (var c = 0; c < 10 * 10; c++) {
-            var _a = [c % 10, Math.floor(c / 10)], x = _a[0], y = _a[1];
-            var position = [x, y, 0];
-            var size = 1;
-            var frameIndex = c % 9; // number of frames in this atlas
+        //t3d.glManager.addGeometry("cylinder",cylinder([0,0,1],1,1,13),"red");
+        //t3d.glManager.addGeometry("cylinder2",cylinder([1,1,0],1,1,13),"red");
+        t3d.glManager.addGeometry("q2", geometry_1.quad([1, 0, 0], 1.5), "red");
+        t3d.glManager.addGeometry("q", geometry_1.quad([3, 0, 2], 1), "green");
+        /*for(let c=0;c<10*10;c++){
+            const [x,y] = [c%10,Math.floor(c/10)];
+            const position:vec3 = [x,y,0];
+            const size = 1
+            const frameIndex = c%9; // number of frames in this atlas
             // const matKey = materials[Math.floor(Math.random() * materials.length)].name;
-            t3d.glManager.addGeometry("q" + c, geometry_1.quad(position, size, frameIndex), "tex");
-        }
+            t3d.glManager.addGeometry("q"+c,quad(position,size,frameIndex),"tex");
+        }*/
         var last = null;
         var FPS = 25;
         var tpf = 1000 / 25;
@@ -46,7 +51,7 @@ define(["require", "exports", "tile3d/tile3d", "tile3d/webgl/camera", "tile3d/we
         function draw_fn(timestamp) {
             last = timestamp;
             t3d.glManager.render();
-            t3d.glManager.camera.rotate(0.1, [0, 0, 1]);
+            t3d.glManager.geometries["cylinder"].rotate(0.1, [0, 1, 0]);
             window.requestAnimationFrame(draw_fn);
         }
         window.requestAnimationFrame(draw_fn);

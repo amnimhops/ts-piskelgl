@@ -1,4 +1,5 @@
 import { mat4, vec2, vec4 } from "gl-matrix";
+import { Geometry } from "./geometry";
 
 function loadShader(gl:WebGLRenderingContext,type:number,source:string):WebGLShader{
     const shader:WebGLShader = gl.createShader(type);
@@ -44,7 +45,7 @@ interface MaterialParams{
 }
 
 class Material{
-    static VERTEX_ATTRIBUTES = 3+2+1; // x y z u v i
+    static VERTEX_ATTRIBUTES = 3+2; // x y z u v
     static VERTEX_ATTRIBUTE_SIZE = Float32Array.BYTES_PER_ELEMENT;
     static VERTEX_SIZE = Material.VERTEX_ATTRIBUTE_SIZE * Material.VERTEX_ATTRIBUTES;
     
@@ -62,6 +63,9 @@ class Material{
         // Avoid compile again
         this.compiled = true;
     }
+    protected beforeDraw(gl:WebGLRenderingContext){
+
+    }
     /**
      * 
      * @param gl 
@@ -69,16 +73,13 @@ class Material{
      * @param modelViewMatrix 
      * @param samplerTextureId 0 for GL_TEXTURE0 and so on
      */
-    use(params:MaterialParams){
-        const gl = params.gl;
+    render(gl:WebGLRenderingContext, projectionMatrix:mat4, geometries:Geometry[]){
 
         if(!this.compiled){
             this.compile(gl);
         }
         // Note to myself: useProgram must be invoked before uniform setup
-        gl.useProgram(this.glProgram);
-
-        
+        gl.useProgram(this.glProgram); 
         
         const camUniform = gl.getUniformLocation(this.glProgram,"uProjectionMatrix");
         const modelViewUniform = gl.getUniformLocation(this.glProgram,"uModelViewMatrix");
@@ -87,8 +88,17 @@ class Material{
         gl.vertexAttribPointer(vertexAttrib,3,gl.FLOAT,false,Material.VERTEX_SIZE,0);  // first 3 floats
         gl.enableVertexAttribArray(vertexAttrib);
         
-        gl.uniformMatrix4fv(camUniform,false,params.projectionMatrix);
-        gl.uniformMatrix4fv(modelViewUniform,false,params.modelViewMatrix);
+        gl.uniformMatrix4fv(camUniform,false,projectionMatrix);
+
+        this.beforeDraw(gl);
+
+        for(const geometry of geometries){
+            gl.bindBuffer(gl.ARRAY_BUFFER,geometry.vertexBuffer);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,geometry.indexBuffer);
+        
+            gl.uniformMatrix4fv(modelViewUniform,false,geometry.matrix);
+            gl.drawElements(gl.TRIANGLES,3 * geometry.faceCount ,gl.UNSIGNED_SHORT,0);
+        }
     }
 }
 
@@ -98,21 +108,17 @@ class ColorMaterial extends Material{
                 
         uniform mat4 uModelViewMatrix;
         uniform mat4 uProjectionMatrix;
-
-        //attribute vec2 aTextureCoord;
-        //varying highp vec2 vTextureCoord;
-
+        
         void main() {
             gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-            //vTextureCoord = aTextureCoord;
         }
         `;
     static FS_SSRC = `
         uniform highp vec4 matColor;
-        //varying highp vec2 vTextureCoord;
-        //uniform sampler2D uSampler;
+
         void main() {
-            gl_FragColor = matColor;//texture2D(uSampler, vTextureCoord);
+            gl_FragColor = matColor;
+
         }
     `;
 
@@ -124,11 +130,7 @@ class ColorMaterial extends Material{
         this.color = color;
     }
 
-    use(params:MaterialParams){
-        const gl = params.gl;
-
-        super.use(params);
-        
+    beforeDraw(gl:WebGLRenderingContext){
         // Add uniform for material rgb color
         const matColorUniform = gl.getUniformLocation(this.getProgram(),"matColor");
         gl.uniform4fv(matColorUniform,this.color);
@@ -164,13 +166,9 @@ class TextureMaterial extends Material{
         super(TextureMaterial.VS_SRC,TextureMaterial.FS_SSRC);
     }
 
-    use(params:MaterialParams){
-        const gl = params.gl;
-
+    beforeDraw(gl:WebGLRenderingContext){
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D,this.texture.glTex);
-
-        super.use(params);
 
         const textCoordAttrib = gl.getAttribLocation(this.getProgram(),"aTextureCoord");
         gl.vertexAttribPointer(textCoordAttrib,2,gl.FLOAT,false,Material.VERTEX_SIZE,3 * Material.VERTEX_ATTRIBUTE_SIZE);   // skip 3 floats, next 2 floats
@@ -226,14 +224,9 @@ class AnimatedTextureMaterial extends Material{
         super(AnimatedTextureMaterial.VS_SRC,AnimatedTextureMaterial.FS_SSRC);
     }
 
-    use(params:MaterialParams){
-        const gl = params.gl;
-
+    beforeDraw(gl:WebGLRenderingContext){
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D,this.texture.glTex);
-
-        super.use(params);
-
         /*
          * setup texture coords attribute
          */

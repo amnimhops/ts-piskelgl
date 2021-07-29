@@ -58,6 +58,8 @@ define(["require", "exports"], function (require, exports) {
             // Avoid compile again
             this.compiled = true;
         };
+        Material.prototype.beforeDraw = function (gl) {
+        };
         /**
          *
          * @param gl
@@ -65,8 +67,7 @@ define(["require", "exports"], function (require, exports) {
          * @param modelViewMatrix
          * @param samplerTextureId 0 for GL_TEXTURE0 and so on
          */
-        Material.prototype.use = function (params) {
-            var gl = params.gl;
+        Material.prototype.render = function (gl, projectionMatrix, geometries) {
             if (!this.compiled) {
                 this.compile(gl);
             }
@@ -78,10 +79,17 @@ define(["require", "exports"], function (require, exports) {
             var vertexAttrib = gl.getAttribLocation(this.glProgram, "aVertexPosition");
             gl.vertexAttribPointer(vertexAttrib, 3, gl.FLOAT, false, Material.VERTEX_SIZE, 0); // first 3 floats
             gl.enableVertexAttribArray(vertexAttrib);
-            gl.uniformMatrix4fv(camUniform, false, params.projectionMatrix);
-            gl.uniformMatrix4fv(modelViewUniform, false, params.modelViewMatrix);
+            gl.uniformMatrix4fv(camUniform, false, projectionMatrix);
+            this.beforeDraw(gl);
+            for (var _i = 0, geometries_1 = geometries; _i < geometries_1.length; _i++) {
+                var geometry = geometries_1[_i];
+                gl.bindBuffer(gl.ARRAY_BUFFER, geometry.vertexBuffer);
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, geometry.indexBuffer);
+                gl.uniformMatrix4fv(modelViewUniform, false, geometry.matrix);
+                gl.drawElements(gl.TRIANGLES, 3 * geometry.faceCount, gl.UNSIGNED_SHORT, 0);
+            }
         };
-        Material.VERTEX_ATTRIBUTES = 3 + 2 + 1; // x y z u v i
+        Material.VERTEX_ATTRIBUTES = 3 + 2; // x y z u v
         Material.VERTEX_ATTRIBUTE_SIZE = Float32Array.BYTES_PER_ELEMENT;
         Material.VERTEX_SIZE = Material.VERTEX_ATTRIBUTE_SIZE * Material.VERTEX_ATTRIBUTES;
         return Material;
@@ -94,15 +102,13 @@ define(["require", "exports"], function (require, exports) {
             _this.color = color;
             return _this;
         }
-        ColorMaterial.prototype.use = function (params) {
-            var gl = params.gl;
-            _super.prototype.use.call(this, params);
+        ColorMaterial.prototype.beforeDraw = function (gl) {
             // Add uniform for material rgb color
             var matColorUniform = gl.getUniformLocation(this.getProgram(), "matColor");
             gl.uniform4fv(matColorUniform, this.color);
         };
-        ColorMaterial.VS_SRC = "\n        attribute vec4 aVertexPosition;\n                \n        uniform mat4 uModelViewMatrix;\n        uniform mat4 uProjectionMatrix;\n\n        //attribute vec2 aTextureCoord;\n        //varying highp vec2 vTextureCoord;\n\n        void main() {\n            gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;\n            //vTextureCoord = aTextureCoord;\n        }\n        ";
-        ColorMaterial.FS_SSRC = "\n        uniform highp vec4 matColor;\n        //varying highp vec2 vTextureCoord;\n        //uniform sampler2D uSampler;\n        void main() {\n            gl_FragColor = matColor;//texture2D(uSampler, vTextureCoord);\n        }\n    ";
+        ColorMaterial.VS_SRC = "\n        attribute vec4 aVertexPosition;\n                \n        uniform mat4 uModelViewMatrix;\n        uniform mat4 uProjectionMatrix;\n        \n        void main() {\n            gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;\n        }\n        ";
+        ColorMaterial.FS_SSRC = "\n        uniform highp vec4 matColor;\n\n        void main() {\n            gl_FragColor = matColor;\n\n        }\n    ";
         return ColorMaterial;
     }(Material));
     exports.ColorMaterial = ColorMaterial;
@@ -113,11 +119,9 @@ define(["require", "exports"], function (require, exports) {
             _this.texture = texture;
             return _this;
         }
-        TextureMaterial.prototype.use = function (params) {
-            var gl = params.gl;
+        TextureMaterial.prototype.beforeDraw = function (gl) {
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, this.texture.glTex);
-            _super.prototype.use.call(this, params);
             var textCoordAttrib = gl.getAttribLocation(this.getProgram(), "aTextureCoord");
             gl.vertexAttribPointer(textCoordAttrib, 2, gl.FLOAT, false, Material.VERTEX_SIZE, 3 * Material.VERTEX_ATTRIBUTE_SIZE); // skip 3 floats, next 2 floats
             gl.enableVertexAttribArray(textCoordAttrib);
@@ -139,11 +143,9 @@ define(["require", "exports"], function (require, exports) {
             _this.frameIndex = 0;
             return _this;
         }
-        AnimatedTextureMaterial.prototype.use = function (params) {
-            var gl = params.gl;
+        AnimatedTextureMaterial.prototype.beforeDraw = function (gl) {
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, this.texture.glTex);
-            _super.prototype.use.call(this, params);
             /*
              * setup texture coords attribute
              */

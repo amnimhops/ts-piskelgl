@@ -97,19 +97,7 @@ export class WebGLManager{
             const material = this.materials[matName];
             const geomQueue = this.renderQueue[matName];
 
-            for(const geometry of geomQueue){
-                this.gl.bindBuffer(this.gl.ARRAY_BUFFER,geometry.vertexBuffer);
-                this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER,geometry.indexBuffer);
-            
-                
-                material.use({
-                    gl:this.gl,
-                    modelViewMatrix:geometry.matrix,
-                    projectionMatrix:projectionViewMatrix
-                });
-
-                this.gl.drawElements(this.gl.TRIANGLES,3 * geometry.faceCount ,this.gl.UNSIGNED_SHORT,0);
-            }
+            material.render(this.gl,projectionViewMatrix,geomQueue);
         }
     }
 }

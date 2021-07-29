@@ -1,4 +1,6 @@
-import { Geometry } from "tile3d/webgl/geometry";
+import { Geometry, quad } from "tile3d/webgl/geometry";
+import { Texture } from "tile3d/webgl/material";
+import { WebGLManager } from "tile3d/webgl/webglmanager";
 interface PiskelChunk{
     layout:number[][];
     base64PNG:string;
@@ -66,8 +68,8 @@ class PiskelLoader{
     }
 }
 
-class PiskelSurface extends Geometry{
-
+class PiskelSurface{
+   
 }
 
 class PiskelMaterial{
