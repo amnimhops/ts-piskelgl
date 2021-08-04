@@ -30,6 +30,12 @@ class Entity{
 
         return mtx;
     }
+
+    getPosition():vec3{
+        const pos = vec3.create();
+        mat4.getTranslation(pos,this.translation);
+        return pos;
+    }
 }
 
 export {

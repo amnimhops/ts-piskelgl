@@ -1,4 +1,4 @@
-define(["require", "exports", "tile3d/tile3d", "tile3d/webgl/camera", "tile3d/webgl/geometry", "tile3d/webgl/material", "tile3d/piskel/piskel"], function (require, exports, tile3d_1, camera_1, geometry_1, material_1, piskel) {
+define(["require", "exports", "tile3d/tile3d", "tile3d/webgl/camera", "tile3d/webgl/geometry", "tile3d/webgl/material", "tile3d/piskel/piskel", "tile3d/webgl/texture"], function (require, exports, tile3d_1, camera_1, geometry_1, material_1, piskel, texture_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var canvas = document.createElement("canvas");
@@ -15,13 +15,13 @@ define(["require", "exports", "tile3d/tile3d", "tile3d/webgl/camera", "tile3d/we
     var image = new Image();
     image.onload = function (event) {
         console.log('fuuu');
-        t3d.glManager.createTexture("prueba", image);
+        texture_1.TextureManager.createTexture("prueba", image);
         var materials = [
             { name: 'red', mat: new material_1.ColorMaterial([1, 0, 0, 1]) },
             { name: 'green', mat: new material_1.ColorMaterial([0, 1, 0, 1]) },
             { name: 'blue', mat: new material_1.ColorMaterial([0, 0, 1, 1]) },
-            { name: 'tex', mat: new material_1.TextureMaterial(t3d.glManager.getTexture("prueba")) },
-            { name: 'atex', mat: new material_1.AnimatedTextureMaterial(t3d.glManager.getTexture("prueba"), [32, 32], 0) }
+            { name: 'tex', mat: new material_1.TextureMaterial(texture_1.TextureManager.getTexture("prueba")) },
+            { name: 'atex', mat: new material_1.AnimatedTextureMaterial(texture_1.TextureManager.getTexture("prueba"), [32, 32], 0) }
         ];
         materials.forEach(function (color) { return t3d.glManager.addMaterial(color.name, color.mat); });
         var camera = new camera_1.Camera(45, canvas.clientWidth, canvas.clientHeight, 0.1, 100);
@@ -29,12 +29,12 @@ define(["require", "exports", "tile3d/tile3d", "tile3d/webgl/camera", "tile3d/we
         //camera.rotate(45,[0,1,0]);
         //camera.rotate(15,[0,1,1]);
         t3d.glManager.setCamera(camera);
-        /*t3d.glManager.addGeometry("q1",quad([-1,0,0],1.5,1),"atex");
-        t3d.glManager.addGeometry("q2",quad([1,0,0],1.5,4),"atex");*/
+        t3d.glManager.addGeometry("q1", geometry_1.quad([-1, 0, 0], 1.5), "tex");
+        t3d.glManager.addGeometry("q2", geometry_1.quad([2, 3, 1], 1.5), "tex");
         //t3d.glManager.addGeometry("cylinder",cylinder([0,0,1],1,1,13),"red");
         //t3d.glManager.addGeometry("cylinder2",cylinder([1,1,0],1,1,13),"red");
-        t3d.glManager.addGeometry("q2", geometry_1.quad([1, 0, 0], 1.5), "red");
-        t3d.glManager.addGeometry("q", geometry_1.quad([3, 0, 2], 1), "green");
+        t3d.glManager.addGeometry("q3", geometry_1.quad([1, 0, 0], 1.5), "red");
+        t3d.glManager.addGeometry("q4", geometry_1.quad([3, 0, 2], 1), "red");
         /*for(let c=0;c<10*10;c++){
             const [x,y] = [c%10,Math.floor(c/10)];
             const position:vec3 = [x,y,0];
@@ -51,7 +51,7 @@ define(["require", "exports", "tile3d/tile3d", "tile3d/webgl/camera", "tile3d/we
         function draw_fn(timestamp) {
             last = timestamp;
             t3d.glManager.render();
-            t3d.glManager.geometries["cylinder"].rotate(0.1, [0, 1, 0]);
+            t3d.glManager.camera.rotate(0.1, [0, 1, 0]);
             window.requestAnimationFrame(draw_fn);
         }
         window.requestAnimationFrame(draw_fn);

@@ -1,16 +1,19 @@
 import { Geometry, quad } from "tile3d/webgl/geometry";
 import { Texture } from "tile3d/webgl/material";
 import { WebGLManager } from "tile3d/webgl/webglmanager";
+
 interface PiskelChunk{
     layout:number[][];
     base64PNG:string;
 }
+
 interface PiskelLayer{
     name:string;
     opacity:number;
     frameCount:number;
     chunks:PiskelChunk[];
 }
+
 interface Piskel{
     modelVersion:string;
     piskel:{
@@ -21,6 +24,7 @@ interface Piskel{
         layers:PiskelLayer[];
     }
 }
+
 class PiskelLoader{
     static load(data:string):Piskel{
         return PiskelLoader.parseFile(data);

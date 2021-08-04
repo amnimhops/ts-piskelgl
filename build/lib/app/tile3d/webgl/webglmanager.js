@@ -1,13 +1,21 @@
-define(["require", "exports", "./material"], function (require, exports, material_1) {
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
+define(["require", "exports", "gl-matrix", "./texture"], function (require, exports, gl_matrix_1, texture_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    exports.WebGLManager = void 0;
     var WebGLManager = /** @class */ (function () {
         function WebGLManager(context) {
-            this.textures = {};
             this.materials = {};
             this.geometries = {};
             this.renderQueue = {};
             this.gl = context;
+            texture_1.TextureManager.init(context);
         }
         WebGLManager.prototype.addMaterial = function (name, material) {
             if (this.materials[name] !== undefined) {
@@ -30,32 +38,19 @@ define(["require", "exports", "./material"], function (require, exports, materia
         WebGLManager.prototype.setCamera = function (camera) {
             this.camera = camera;
         };
-        WebGLManager.prototype.getTexture = function (name) {
-            if (this.textures[name] == undefined) {
-                throw new Error("Texture " + name + " not found");
-            }
-            return this.textures[name];
-        };
-        WebGLManager.prototype.createTexture = function (name, image) {
-            if (this.textures[name] != undefined) {
-                throw new Error("texture " + name + " already defined");
-            }
-            var glTexture = this.gl.createTexture();
-            this.gl.bindTexture(this.gl.TEXTURE_2D, glTexture);
-            this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
-            this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, image);
-            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-            // TODO: Need to check if webgl does support mipmapping with npot textures
-            // https://stackoverflow.com/questions/3792027/webgl-and-the-power-of-two-image-size
-            // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Using_textures_in_WebGL
-            //this.gl.generateMipmap(this.gl.TEXTURE_2D);
-            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
-            this.textures[name] = new material_1.Texture(glTexture, [image.width, image.height]);
-        };
         WebGLManager.prototype.setScene = function (scene) {
             this.scene = scene;
+        };
+        WebGLManager.prototype.sortGeometriesByCamPos = function (geometries, reverse) {
+            if (reverse === void 0) { reverse = false; }
+            var camPos = this.camera.getPosition();
+            var sortedGeometries = new (Array.bind.apply(Array, __spreadArrays([void 0], geometries)))();
+            sortedGeometries.sort(function (a, b) {
+                var aDist = gl_matrix_1.vec3.dist(camPos, a.getPosition());
+                var bDist = gl_matrix_1.vec3.dist(camPos, b.getPosition());
+                return reverse ? (bDist - aDist) : (aDist - bDist);
+            });
+            return sortedGeometries;
         };
         WebGLManager.prototype.render = function () {
             // Compute camera matrix only once
@@ -66,9 +61,11 @@ define(["require", "exports", "./material"], function (require, exports, materia
             this.gl.enable(this.gl.DEPTH_TEST);
             this.gl.depthFunc(this.gl.LEQUAL);
             this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+            this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
+            this.gl.enable(this.gl.BLEND);
             for (var matName in this.renderQueue) {
                 var material = this.materials[matName];
-                var geomQueue = this.renderQueue[matName];
+                var geomQueue = this.sortGeometriesByCamPos(this.renderQueue[matName], true);
                 material.render(this.gl, projectionViewMatrix, geomQueue);
             }
         };

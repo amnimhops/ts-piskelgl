@@ -2,7 +2,7 @@ var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
         return extendStatics(d, b);
     };
     return function (d, b) {
@@ -11,9 +11,11 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-define(["require", "exports"], function (require, exports) {
+define(["require", "exports", "./texture"], function (require, exports, texture_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    exports.AnimatedTextureMaterial = exports.TextureMaterial = exports.ColorMaterial = exports.Material = exports.Texture = void 0;
+    Object.defineProperty(exports, "Texture", { enumerable: true, get: function () { return texture_1.Texture; } });
     function loadShader(gl, type, source) {
         var shader = gl.createShader(type);
         gl.shaderSource(shader, source);
@@ -36,14 +38,6 @@ define(["require", "exports"], function (require, exports) {
         }
         return program;
     }
-    var Texture = /** @class */ (function () {
-        function Texture(glTex, size) {
-            this.glTex = glTex;
-            this.size = size;
-        }
-        return Texture;
-    }());
-    exports.Texture = Texture;
     var Material = /** @class */ (function () {
         function Material(vsSource, fsSource) {
             this.vsSource = vsSource;
@@ -75,14 +69,14 @@ define(["require", "exports"], function (require, exports) {
             gl.useProgram(this.glProgram);
             var camUniform = gl.getUniformLocation(this.glProgram, "uProjectionMatrix");
             var modelViewUniform = gl.getUniformLocation(this.glProgram, "uModelViewMatrix");
-            // Vertex data is located in the first 3 floats of the vertex buffer
-            var vertexAttrib = gl.getAttribLocation(this.glProgram, "aVertexPosition");
-            gl.vertexAttribPointer(vertexAttrib, 3, gl.FLOAT, false, Material.VERTEX_SIZE, 0); // first 3 floats
-            gl.enableVertexAttribArray(vertexAttrib);
-            gl.uniformMatrix4fv(camUniform, false, projectionMatrix);
-            this.beforeDraw(gl);
             for (var _i = 0, geometries_1 = geometries; _i < geometries_1.length; _i++) {
                 var geometry = geometries_1[_i];
+                gl.uniformMatrix4fv(camUniform, false, projectionMatrix);
+                this.beforeDraw(gl);
+                // Vertex data is located in the first 3 floats of the vertex buffer
+                var vertexAttrib = gl.getAttribLocation(this.glProgram, "aVertexPosition");
+                gl.vertexAttribPointer(vertexAttrib, 3, gl.FLOAT, false, Material.VERTEX_SIZE, 0); // first 3 floats
+                gl.enableVertexAttribArray(vertexAttrib);
                 gl.bindBuffer(gl.ARRAY_BUFFER, geometry.vertexBuffer);
                 gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, geometry.indexBuffer);
                 gl.uniformMatrix4fv(modelViewUniform, false, geometry.matrix);

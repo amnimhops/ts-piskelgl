@@ -1,6 +1,7 @@
 define(["require", "exports", "gl-matrix"], function (require, exports, gl_matrix_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    exports.Entity = void 0;
     var Entity = /** @class */ (function () {
         function Entity(translation, rotation, scalation) {
             if (translation === void 0) { translation = undefined; }
@@ -26,9 +27,14 @@ define(["require", "exports", "gl-matrix"], function (require, exports, gl_matri
                 gl_matrix_1.mat4.multiply(mtx, mtx, this.translation);
                 return mtx;
             },
-            enumerable: true,
+            enumerable: false,
             configurable: true
         });
+        Entity.prototype.getPosition = function () {
+            var pos = gl_matrix_1.vec3.create();
+            gl_matrix_1.mat4.getTranslation(pos, this.translation);
+            return pos;
+        };
         return Entity;
     }());
     exports.Entity = Entity;

@@ -1,6 +1,7 @@
 define(["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    exports.PiskelLoader = void 0;
     var PiskelLoader = /** @class */ (function () {
         function PiskelLoader() {
         }

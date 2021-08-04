@@ -2,7 +2,7 @@ var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||
             ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
         return extendStatics(d, b);
     };
     return function (d, b) {
@@ -11,9 +11,17 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
 define(["require", "exports", "./entity"], function (require, exports, entity_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
+    exports.cylinder = exports.quad = exports.Geometry = exports.VertexBufferModel = void 0;
     /**
      * This class explains how vertex buffer information is organized.
      * Each vertex has 4 attributes: position, normals, texture coordinates and color.
@@ -66,7 +74,7 @@ define(["require", "exports", "./entity"], function (require, exports, entity_1)
     function vertex(pos, uv, rgba) {
         if (uv === void 0) { uv = [0, 0]; }
         if (rgba === void 0) { rgba = [1, 1, 1, 1]; }
-        return [].concat.apply([], pos.concat(uv));
+        return [].concat.apply([], __spreadArrays(pos, uv));
     }
     function quad(pos, size, uvOffset) {
         if (uvOffset === void 0) { uvOffset = [0, 0]; }
@@ -121,7 +129,7 @@ define(["require", "exports", "./entity"], function (require, exports, entity_1)
             faces.push(a2, b2, b1);
         }
         // Flatten the vertex data and return its values
-        var geometry = new Geometry([].concat.apply([], bottomCap.concat(topCap)), faces);
+        var geometry = new Geometry([].concat.apply([], __spreadArrays(bottomCap, topCap)), faces);
         geometry.translate(pos);
         return geometry;
     }

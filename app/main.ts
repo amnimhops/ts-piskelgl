@@ -21,14 +21,14 @@ const t3d = new Tile3D({
 const image = new Image();
 image.onload = function(event) {
     console.log('fuuu');
-    t3d.glManager.createTexture("prueba",image);
+    TextureManager.createTexture("prueba",image);
 
     const materials = [
         {name:'red',mat:new ColorMaterial([1,0,0,1])},
         {name:'green',mat:new ColorMaterial([0,1,0,1])},
         {name:'blue',mat:new ColorMaterial([0,0,1,1])},
-        {name:'tex',mat:new TextureMaterial(t3d.glManager.getTexture("prueba"))},
-        {name:'atex',mat:new AnimatedTextureMaterial(t3d.glManager.getTexture("prueba"),[32,32],0)}
+        {name:'tex',mat:new TextureMaterial(TextureManager.getTexture("prueba"))},
+        {name:'atex',mat:new AnimatedTextureMaterial(TextureManager.getTexture("prueba"),[32,32],0)}
     ]
     materials.forEach( color => t3d.glManager.addMaterial(color.name,color.mat));
     
@@ -39,13 +39,13 @@ image.onload = function(event) {
     //camera.rotate(15,[0,1,1]);
 
     t3d.glManager.setCamera(camera);
-    /*t3d.glManager.addGeometry("q1",quad([-1,0,0],1.5,1),"atex");
-    t3d.glManager.addGeometry("q2",quad([1,0,0],1.5,4),"atex");*/
+    t3d.glManager.addGeometry("q1",quad([-1,0,0],1.5),"tex");
+    t3d.glManager.addGeometry("q2",quad([2,3,1],1.5),"tex");
     
     //t3d.glManager.addGeometry("cylinder",cylinder([0,0,1],1,1,13),"red");
     //t3d.glManager.addGeometry("cylinder2",cylinder([1,1,0],1,1,13),"red");
-    t3d.glManager.addGeometry("q2",quad([1,0,0],1.5),"red");
-    t3d.glManager.addGeometry("q",quad([3,0,2],1  ),"green");
+    t3d.glManager.addGeometry("q3",quad([1,0,0],1.5),"red");
+    t3d.glManager.addGeometry("q4",quad([3,0,2],1  ),"red");
     /*for(let c=0;c<10*10;c++){
         const [x,y] = [c%10,Math.floor(c/10)];
         const position:vec3 = [x,y,0];  
@@ -65,7 +65,7 @@ image.onload = function(event) {
         
         last = timestamp;
         t3d.glManager.render();
-        t3d.glManager.geometries["cylinder"].rotate(0.1,[0,1,0]);
+        t3d.glManager.camera.rotate(0.1,[0,1,0]);
         window.requestAnimationFrame(draw_fn);
     }
     window.requestAnimationFrame(draw_fn);
@@ -92,6 +92,7 @@ for(let x=0;x<16;x++){
 
 // Testing piskel
 import * as piskel from 'tile3d/piskel/piskel';
+import { TextureManager } from 'tile3d/webgl/texture';
 
 
 fetch("/build/assets/running.piskel")
