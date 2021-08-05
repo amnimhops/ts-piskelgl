@@ -3,10 +3,22 @@ import { Entity } from "./entity";
 
 class Camera extends Entity{
     private projection:mat4;
-    constructor(fov:number,width:number,height:number,znear:number,zfar:number){
+    public static perspective(fov:number,width:number,height:number,znear:number,zfar:number){
+        const mat = mat4.create();
+        mat4.perspective(mat,fov * Math.PI / 180, width/height, znear,zfar);
+        return new Camera(mat);
+    }
+
+    public static ortho(left:number,right:number,bottom:number,top:number,near:number,far:number){
+        const mat = mat4.create();
+        mat4.ortho(mat,left,right,bottom,top,near,far);
+        
+        return new Camera(mat);
+    }
+
+    private constructor(projectionMatrix:mat4){
         super();
-        this.projection = mat4.create();
-        mat4.perspective(this.projection,fov * Math.PI / 180, width/height, znear,zfar);
+        this.projection = projectionMatrix
     }
 
     getViewProjectionMatrix(){

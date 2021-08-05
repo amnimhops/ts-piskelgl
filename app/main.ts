@@ -2,7 +2,7 @@ import { vec3 } from 'gl-matrix';
 import {Tile3D} from 'tile3d/tile3d';
 import { Camera } from 'tile3d/webgl/camera';
 import { cylinder, Geometry,quad } from 'tile3d/webgl/geometry';
-import { AnimatedTextureMaterial, ColorMaterial, TextureMaterial } from 'tile3d/webgl/material';
+import { AnimatedTextureMaterial, ColorMaterial, Material, TextureMaterial } from 'tile3d/webgl/material';
 import { Scene } from 'tile3d/webgl/scene';
 
 const canvas = document.createElement("canvas");
@@ -32,20 +32,24 @@ image.onload = function(event) {
     ]
     materials.forEach( color => t3d.glManager.addMaterial(color.name,color.mat));
     
-    const camera = new Camera(45,canvas.clientWidth,canvas.clientHeight,0.1,100);
+    //const camera = Camera.perspective(45,canvas.clientWidth,canvas.clientHeight,0.1,100);
     
-    camera.translate([2,2,15]);
+    // To set up the ortho camera we need to fix the aspect ratio
+    const aspectRatio = canvas.clientWidth/canvas.clientHeight;
+    const camera = Camera.ortho(-1*aspectRatio,1*aspectRatio,-1,1,-1,10);
+    
+    //camera.translate([1,1,5]);
     //camera.rotate(45,[0,1,0]);
     //camera.rotate(15,[0,1,1]);
 
     t3d.glManager.setCamera(camera);
-    t3d.glManager.addGeometry("q1",quad([-1,0,0],1.5),"tex");
-    t3d.glManager.addGeometry("q2",quad([2,3,1],1.5),"tex");
+    //t3d.glManager.addGeometry("q1",quad([-1,0,0],1.5),"tex");
+    //t3d.glManager.addGeometry("q2",quad([2,3,1],1.5),"tex");
     
     //t3d.glManager.addGeometry("cylinder",cylinder([0,0,1],1,1,13),"red");
     //t3d.glManager.addGeometry("cylinder2",cylinder([1,1,0],1,1,13),"red");
-    t3d.glManager.addGeometry("q3",quad([1,0,0],1.5),"red");
-    t3d.glManager.addGeometry("q4",quad([3,0,2],1  ),"red");
+    //t3d.glManager.addGeometry("q3",quad([1,0,0],1.5),"red");
+    //t3d.glManager.addGeometry("q4",quad([3,0,2],1  ),"red");
     /*for(let c=0;c<10*10;c++){
         const [x,y] = [c%10,Math.floor(c/10)];
         const position:vec3 = [x,y,0];  
@@ -61,11 +65,12 @@ image.onload = function(event) {
     let framesPainted = 0;
     let timeElapsed = 0;
 
-    function draw_fn(timestamp){
-        
+    function draw_fn(timestamp:number){
+        const delta = timestamp - last;
         last = timestamp;
         t3d.glManager.render();
-        t3d.glManager.camera.rotate(0.1,[0,1,0]);
+        PiskelAnimationManager.update(delta);
+       // t3d.glManager.camera.rotate(0.1,[0,1,0]);
         window.requestAnimationFrame(draw_fn);
     }
     window.requestAnimationFrame(draw_fn);
@@ -91,7 +96,7 @@ for(let x=0;x<16;x++){
 }
 
 // Testing piskel
-import * as piskel from 'tile3d/piskel/piskel';
+import {PiskelLoader,PiskelSurface,PiskelAnimationManager} from 'tile3d/piskel/piskel';
 import { TextureManager } from 'tile3d/webgl/texture';
 
 
@@ -100,7 +105,17 @@ fetch("/build/assets/running.piskel")
         return response.json();
     })
     .then( (data:any) => {
-        console.log(piskel.PiskelLoader.load(data));
+        return PiskelLoader.load(data);
+    })
+    .then( (surfaces:PiskelSurface[]) => {
+        let count = 0;
+        for(const surface of surfaces){
+            const matid = "mat"+count;
+            t3d.glManager.addMaterial(matid,new TextureMaterial(surface.texture));
+            surface.geometries.forEach( (geom) => t3d.glManager.addAnonGeometry(geom,matid) );
+            
+            count++;
+        }
     })
     .catch( (err:any) =>{
         console.error(err);

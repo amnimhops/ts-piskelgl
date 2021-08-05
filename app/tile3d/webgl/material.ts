@@ -77,20 +77,22 @@ class Material{
         const modelViewUniform = gl.getUniformLocation(this.glProgram,"uModelViewMatrix");
         
         for(const geometry of geometries){
-            gl.uniformMatrix4fv(camUniform,false,projectionMatrix);
+            if(geometry.visible){
+                gl.uniformMatrix4fv(camUniform,false,projectionMatrix);
 
-            this.beforeDraw(gl);
+                this.beforeDraw(gl);
 
-            // Vertex data is located in the first 3 floats of the vertex buffer
-            const vertexAttrib = gl.getAttribLocation(this.glProgram,"aVertexPosition");
-            gl.vertexAttribPointer(vertexAttrib,3,gl.FLOAT,false,Material.VERTEX_SIZE,0);  // first 3 floats
-            gl.enableVertexAttribArray(vertexAttrib);
-                    
-            gl.bindBuffer(gl.ARRAY_BUFFER,geometry.vertexBuffer);
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,geometry.indexBuffer);
-        
-            gl.uniformMatrix4fv(modelViewUniform,false,geometry.matrix);
-            gl.drawElements(gl.TRIANGLES,3 * geometry.faceCount ,gl.UNSIGNED_SHORT,0);
+                // Vertex data is located in the first 3 floats of the vertex buffer
+                const vertexAttrib = gl.getAttribLocation(this.glProgram,"aVertexPosition");
+                gl.vertexAttribPointer(vertexAttrib,3,gl.FLOAT,false,Material.VERTEX_SIZE,0);  // first 3 floats
+                gl.enableVertexAttribArray(vertexAttrib);
+                        
+                gl.bindBuffer(gl.ARRAY_BUFFER,geometry.vertexBuffer);
+                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,geometry.indexBuffer);
+            
+                gl.uniformMatrix4fv(modelViewUniform,false,geometry.matrix);
+                gl.drawElements(gl.TRIANGLES,3 * geometry.faceCount ,gl.UNSIGNED_SHORT,0);
+            }
         }
     }
 }

@@ -1,5 +1,20 @@
 import { vec2 } from "gl-matrix";
 
+function loadImage<T>(base64string:string,data:T):Promise<[T,HTMLImageElement]>{
+    return new Promise( (resolve:(image:[T,HTMLImageElement])=>void,reject:(cause:any)=>void )=>{
+        const image = new Image();
+        image.onload = (event:Event) => {
+            resolve([data,image]);
+        }
+
+        image.onerror = (event,source,lineno,colno,error) => {
+            reject(error);
+        }
+        
+        image.src = base64string;
+    });
+}
+
 class Texture{
     glTex:WebGLTexture;
     size:vec2;
@@ -27,7 +42,7 @@ class TextureManager {
         return this.textures[name];
     }
 
-    static createTexture(name: string, image: HTMLImageElement) {
+    static createTexture(name: string, image: HTMLImageElement):Texture {
         const gl = TextureManager.gl;
 
         if (TextureManager.textures[name] != undefined) {
@@ -45,15 +60,18 @@ class TextureManager {
         // https://stackoverflow.com/questions/3792027/webgl-and-the-power-of-two-image-size
         // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Using_textures_in_WebGL
         //gl.generateMipmap(gl.TEXTURE_2D);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-        TextureManager.textures[name] = new Texture(glTexture, [image.width, image.height]);
+        const texture = new Texture(glTexture, [image.width, image.height]);
+        TextureManager.textures[name] = texture;
 
+        return texture;
     }
 }
 
 export{
     TextureManager,
-    Texture
+    Texture,
+    loadImage
 }

@@ -8,13 +8,15 @@ import { Camera } from './camera';
 import { TextureManager } from './texture';
 
 export class WebGLManager {
+    geometryCount:number = 0;
     gl: WebGLRenderingContext;
 
     scene: Scene;
     materials: Record<string, Material> = {};
-    geometries: Record<string, Geometry> = {};
+    geometries: Geometry[] = [];
     renderQueue: Record<string, Geometry[]> = {};
     camera: Camera;
+    background:vec4 = [0.1,0.1,0.1,1];
 
     constructor(context: WebGLRenderingContext) {
         this.gl = context;
@@ -30,6 +32,10 @@ export class WebGLManager {
         this.renderQueue[name] = [];
     }
 
+    addAnonGeometry(geometry: Geometry, pname: string) {
+        this.addGeometry("anonymous_geometry#"+this.geometryCount,geometry,pname);
+    }
+
     addGeometry(name: string, geometry: Geometry, pname: string) {
         if (this.geometries[name] !== undefined) {
             throw new Error(`Geometry ${name} already added`);
@@ -42,6 +48,8 @@ export class WebGLManager {
         this.renderQueue[pname].push(geometry);
 
         geometry.build(this.gl);
+
+        this.geometryCount++;
     }
 
     setCamera(camera: Camera) {
@@ -69,9 +77,10 @@ export class WebGLManager {
         const projectionViewMatrix: mat4 = this.camera.getViewProjectionMatrix();
 
         // Context initialization
-        this.gl.clearColor(0, 0, 0, 1);
+        this.gl.clearColor(this.background[0],this.background[1],this.background[2],this.background[3]);
         this.gl.clearDepth(1)
-        this.gl.enable(this.gl.DEPTH_TEST);
+        // Temporarily disabled to draw overlapped transparent textures
+        //this.gl.enable(this.gl.DEPTH_TEST);
         this.gl.depthFunc(this.gl.LEQUAL);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
 
@@ -80,7 +89,7 @@ export class WebGLManager {
 
         for (const matName in this.renderQueue) {
             const material = this.materials[matName];
-            const geomQueue = this.sortGeometriesByCamPos(this.renderQueue[matName], true);
+            const geomQueue = this.sortGeometriesByCamPos(this.renderQueue[matName], false);
 
             material.render(this.gl, projectionViewMatrix, geomQueue);
         }

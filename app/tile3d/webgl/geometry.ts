@@ -36,7 +36,7 @@ interface VertexAttributeInfo{
 };
 
 class Geometry extends Entity{
-    
+    visible:boolean = true;
     faceCount:number;
     vertexCount:number;
     vertexBuffer:WebGLBuffer;
@@ -74,13 +74,13 @@ class Geometry extends Entity{
 function vertex(pos:vec3,uv:vec2=[0,0],rgba:vec4=[1,1,1,1]):number[]{
     return [].concat(...pos as number[],...uv as number[]);
 }
-function quad(pos:vec3,size:number,uvOffset:vec2=[0,0]):Geometry{
+function quad(pos:vec3,size:number,uvOffset:[vec2,vec2]=[[0,0],[1,1]]):Geometry{
     const hs = size / 2;
     const vertices = [
-        vertex([pos[0] - hs, pos[1] - hs, pos[2]], [uvOffset[0] + 0, uvOffset[1] + 0]),
-        vertex([pos[0] - hs, pos[1] + hs, pos[2]], [uvOffset[0] + 0, uvOffset[1] + 1]),
-        vertex([pos[0] + hs, pos[1] + hs, pos[2]], [uvOffset[0] + 1, uvOffset[1] + 1]),
-        vertex([pos[0] + hs, pos[1] - hs, pos[2]], [uvOffset[0] + 1, uvOffset[1] + 0])
+        vertex([pos[0] - hs, pos[1] - hs, pos[2]], [uvOffset[0][0] , uvOffset[0][1] ]),
+        vertex([pos[0] - hs, pos[1] + hs, pos[2]], [uvOffset[0][0] , uvOffset[1][1] ]),
+        vertex([pos[0] + hs, pos[1] + hs, pos[2]], [uvOffset[1][0] , uvOffset[1][1] ]),
+        vertex([pos[0] + hs, pos[1] - hs, pos[2]], [uvOffset[1][0] , uvOffset[0][1] ])
     ]
     
     return new Geometry([].concat(...vertices),[
